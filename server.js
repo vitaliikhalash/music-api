@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import users from "./routes/users.js";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import connectToDB from "./db/connection.js";
@@ -26,6 +27,9 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Routes
+app.use("/users", users);
 
 // Start the Express server
 app.listen(PORT, () => {
