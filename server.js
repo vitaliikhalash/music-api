@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import playlists from "./routes/playlists.js";
+import users from "./routes/users.js";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import connectToDB from "./db/connection.js";
@@ -30,6 +31,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use("/playlists", playlists);
+app.use("/users", users);
 
 // Start the Express server
 app.listen(PORT, () => {
