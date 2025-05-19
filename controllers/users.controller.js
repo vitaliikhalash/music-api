@@ -1,11 +1,15 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 import User from "../models/user.model.js";
 
 /**
  * @swagger
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  *   schemas:
  *     User:
  *       type: object
@@ -192,183 +196,122 @@ export const loginUser = async (req, res) => {
 
 /**
  * @swagger
- * /users:
+ * /users/me:
  *   get:
- *     summary: Get all users
+ *     summary: Fetch the currently authenticated user's data
  *     tags:
  *       - user
- *     produces:
- *       - application/json
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: A list of users
+ *         description: Authenticated user's data
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/User'
- *       404:
- *         description: No users found
- */
-export const fetchAllUsers = async (req, res) => {
-    try {
-        const users = await User.find();
-        if (users.length > 0) {
-            return res.status(200).json(users);
-        }
-        return res.status(404).json({ message: 'No users found' });
-    } catch (error) {
-        console.error('Error getting users:', error);
-        return res.status(500).json({ message: 'Internal server error' });
-    }
-};
-
-/**
- * @swagger
- * /users/{id}:
- *   get:
- *     summary: Get a specific user by ID
- *     tags:
- *       - user
- *     parameters:
- *       - name: id
- *         in: path
- *         description: ID of the user to retrieve
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: A specific user
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       400:
- *         description: Invalid ID supplied
+ *               $ref: "#/components/schemas/User"
+ *       401:
+ *         description: User is not authorized or token is missing
  *       404:
  *         description: User not found
  */
-export const fetchUserById = async (req, res) => {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: 'Invalid ID supplied' });
-    }
+export const fetchCurrentUser = async (req, res) => {
     try {
-        const user = await User.findById(id).exec();
-        if (user) {
-            return res.status(200).json(user);
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
         }
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(200).json(user);
     } catch (error) {
-        console.error('Error getting user by ID:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        console.error("Error getting current user:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 
 /**
  * @swagger
- * /users:
- *   post:
- *     summary: Create a new user
- *     tags:
- *       - user
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/User'
- *     responses:
- *       201:
- *         description: User created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- */
-export const createNewUser = async (req, res) => {
-    const userData = req.body;
-    try {
-        const user = await User.create(userData);
-        return res.status(201).json(user);
-    } catch (error) {
-        console.error('Error adding user:', error);
-        return res.status(500).json({ message: 'Internal server error' });
-    }
-};
-
-/**
- * @swagger
- * /users/{id}:
+ * /users/me:
  *   patch:
- *     summary: Update an existing user
+ *     summary: Update the currently authenticated user's data
  *     tags:
  *       - user
- *     parameters:
- *       - in: path
- *         name: id
- *         description: ID of the user to update
- *         required: true
- *         schema:
- *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/User'
+ *             type: object
+ *             required:
+ *               - username
+ *               - email
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *                 example: 1234567890
+ *               birthDate:
+ *                 type: string
+ *                 format: date
+ *               gender:
+ *                 type: string
+ *                 enum:
+ *                   - male
+ *                   - female
+ *                   - other
+ *                   - prefer not to say
  *     responses:
  *       200:
- *         description: User updated successfully
+ *         description: User's data updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
- *       400:
- *         description: Invalid ID supplied
+ *               $ref: "#/components/schemas/User"
+ *       401:
+ *         description: User is not authorized or token is missing
  *       404:
  *         description: User not found
  */
-export const updateExistingUser = async (req, res) => {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: 'Invalid ID supplied' });
-    }
+export const updateCurrentUser = async (req, res) => {
     try {
+        const updatedData = { ...req.body };
+        if (updatedData.password) {
+            updatedData.password = await bcrypt.hash(updatedData.password, 12);
+        }
         const updatedUser = await User.findByIdAndUpdate(
-            id,
-            { $set: req.body },
+            req.user.id,
+            { $set: updatedData },
             { new: true, runValidators: true }
         );
-        if (updatedUser) {
-            return res.status(200).json(updatedUser);
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
         }
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(200).json(updatedUser);
     } catch (error) {
-        console.error('Error updating user:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        console.error("Error updating user:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 
 /**
  * @swagger
- * /users/{id}:
+ * /users/me:
  *   delete:
- *     summary: Remove a user by ID
+ *     summary: Delete the currently authenticated user's account
  *     tags:
  *       - user
- *     parameters:
- *       - name: id
- *         in: path
- *         description: ID of the user to delete
- *         required: true
- *         schema:
- *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: User removed successfully
+ *         description: User deleted successfully
  *         content:
  *           application/json:
  *             schema:
@@ -376,25 +319,20 @@ export const updateExistingUser = async (req, res) => {
  *               properties:
  *                 message:
  *                   type: string
- *                   example: User removed successfully
- *       400:
- *         description: Invalid ID supplied
+ *       401:
+ *         description: User is not authorized or token is missing
  *       404:
  *         description: User not found
  */
-export const deleteExistingUser = async (req, res) => {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: 'Invalid ID supplied' });
-    }
+export const deleteCurrentUser = async (req, res) => {
     try {
-        const result = await User.findOneAndDelete({ _id: id });
-        if (result) {
-            return res.status(200).json({ message: 'User removed successfully' });
+        const deletedUser = await User.findByIdAndDelete(req.user.id);
+        if (!deletedUser) {
+            return res.status(404).json({ message: "User not found" });
         }
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(200).json({ message: "User removed successfully" });
     } catch (error) {
-        console.error('Error removing user:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        console.error("Error deleting user:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
