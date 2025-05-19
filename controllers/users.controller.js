@@ -1,3 +1,5 @@
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import User from "../models/user.model.js";
 
@@ -11,10 +13,9 @@ import User from "../models/user.model.js";
  *         - name
  *         - email
  *         - password
- *         - birthDate
- *         - gender
  *       properties:
  *         _id:
+ *           type: string
  *           format: objectid
  *         name:
  *           type: string
@@ -28,9 +29,149 @@ import User from "../models/user.model.js";
  *         gender:
  *           type: string
  * tags:
- *   - name: "user"
- *     description: "Operations about user"
+ *   - name: user
+ *     description: Operations about user
  */
+
+/**
+ * @swagger
+ * /users/register:
+ *   post:
+ *     summary: Register new user into the system
+ *     tags:
+ *       - user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               birthDate:
+ *                 type: string
+ *                 format: date
+ *               gender:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *       400:
+ *         description: Validation error
+ *       409:
+ *         description: Email or username already taken
+ */
+export const registerUser = async (req, res) => {
+    const { name, email, password, birthDate, gender } = req.body;
+    try {
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: "All fields are mandatory" });
+        }
+        const existingEmail = await User.findOne({ email: email.toLowerCase() });
+        const existingUsername = await User.findOne({ name });
+        if (existingUsername) {
+            return res.status(409).json({ message: "Username already taken" });
+        } else if (existingEmail) {
+            return res.status(409).json({ message: "Email already in use" });
+        }
+        const user = await User.create({
+            name,
+            email,
+            password,
+            birthDate,
+            gender,
+        });
+        if (user) {
+            return res.status(201).json({ _id: user.id, email: user.email });
+        }
+    } catch (error) {
+        console.error("Error creating user:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+/**
+ * @swagger
+ * /users/login:
+ *   post:
+ *     summary: Log user into the system
+ *     tags:
+ *       - user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User logged in successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *       400:
+ *         description: All fields are mandatory
+ *       401:
+ *         description: Invalid credentials
+ */
+export const loginUser = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        if (!email || !password) {
+            return res.status(400).json({ message: "All fields are mandatory" });
+        }
+        const user = await User.findOne({ email });
+        if (user && (await bcrypt.compare(password, user.password))) {
+            const accessToken = jwt.sign(
+                {
+                    user: {
+                        id: user.id,
+                        username: user.username,
+                        email: user.email,
+                    },
+                },
+                process.env.ACCESS_TOKEN_SECRET,
+                { expiresIn: "10m" }
+            );
+            return res.status(200).json({ accessToken });
+        } else {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+    } catch (error) {
+        console.error("Error logging user in:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
 
 /**
  * @swagger

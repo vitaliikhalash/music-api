@@ -1,3 +1,4 @@
+import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 const { Schema, model } = mongoose;
 
@@ -12,7 +13,16 @@ const userSchema = new Schema(
     { versionKey: false },
 );
 
-// Format birthDate in JSON output
+userSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next();
+    try {
+        this.password = await bcrypt.hash(this.password, 12);
+        next();
+    } catch (err) {
+        next(err);
+    }
+});
+
 userSchema.set('toJSON', {
     transform: function (doc, ret) {
         if (ret.birthDate) {
