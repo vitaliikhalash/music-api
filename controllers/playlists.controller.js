@@ -8,11 +8,12 @@ import Playlist from "../models/playlist.model.js";
  *     Playlist:
  *       type: object
  *       required:
- *         - title
- *         - trackIds
  *         - userId
  *       properties:
  *         _id:
+ *           type: string
+ *           format: objectid
+ *         userId:
  *           type: string
  *           format: objectid
  *         title:
@@ -22,29 +23,18 @@ import Playlist from "../models/playlist.model.js";
  *           items:
  *             type: string
  *             format: objectid
- *         userId:
- *           type: string
- *           format: objectid
- *         createdAt:
- *           type: string
- *           format: date-time
- *         updatedAt:
- *           type: string
- *           format: date-time
  * tags:
- *   - name: "playlist"
- *     description: "Operations about playlist"
+ *   - name: playlist
+ *     description: Operations about playlist
  */
 
 /**
  * @swagger
  * /playlists:
  *   get:
- *     summary: Get all playlists
+ *     summary: Fetch all playlists
  *     tags:
  *       - playlist
- *     produces:
- *       - application/json
  *     responses:
  *       200:
  *         description: A list of playlists
@@ -53,7 +43,7 @@ import Playlist from "../models/playlist.model.js";
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Playlist'
+ *                 $ref: "#/components/schemas/Playlist"
  *       404:
  *         description: No playlists found
  */
@@ -74,7 +64,7 @@ export const fetchAllPlaylists = async (req, res) => {
  * @swagger
  * /playlists/{id}:
  *   get:
- *     summary: Get a specific playlist by ID
+ *     summary: Fetch a specific playlist by ID
  *     tags:
  *       - playlist
  *     parameters:
@@ -90,7 +80,7 @@ export const fetchAllPlaylists = async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Playlist'
+ *               $ref: "#/components/schemas/Playlist"
  *       400:
  *         description: Invalid ID supplied
  *       404:
@@ -125,14 +115,27 @@ export const fetchPlaylistById = async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Playlist'
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: objectid
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               trackIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: objectid
  *     responses:
  *       201:
  *         description: Playlist created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Playlist'
+ *               $ref: "#/components/schemas/Playlist"
  */
 export const createNewPlaylist = async (req, res) => {
     const playlistData = req.body;
@@ -164,14 +167,27 @@ export const createNewPlaylist = async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Playlist'
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: objectid
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               trackIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: objectid
  *     responses:
  *       200:
  *         description: Playlist updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Playlist'
+ *               $ref: "#/components/schemas/Playlist"
  *       400:
  *         description: Invalid ID supplied
  *       404:
@@ -202,7 +218,7 @@ export const updateExistingPlaylist = async (req, res) => {
  * @swagger
  * /playlists/{id}:
  *   delete:
- *     summary: Remove a playlist by ID
+ *     summary: Delete a playlist by ID
  *     tags:
  *       - playlist
  *     parameters:
@@ -222,7 +238,6 @@ export const updateExistingPlaylist = async (req, res) => {
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Playlist removed successfully
  *       400:
  *         description: Invalid ID supplied
  *       404:
