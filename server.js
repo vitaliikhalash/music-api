@@ -5,6 +5,7 @@ import users from "./routes/users.js";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import connectToDB from "./db/connection.js";
+import exports from "./routes/exports.js"; 
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -23,7 +24,7 @@ const swaggerOptions = {
             version: "1.0.0",
         },
     },
-    apis: ['./controllers/*.js'],
+    apis: ['./controllers/*.js', './routes/exports.js'],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -32,6 +33,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Routes
 app.use("/playlists", playlists);
 app.use("/users", users);
+app.use("/exports", exports);
 
 // Start the Express server
 app.listen(PORT, () => {
