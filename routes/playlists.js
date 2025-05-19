@@ -5,9 +5,11 @@ import {
     updateExistingPlaylist,
     deleteExistingPlaylist,
 } from "../controllers/playlists.controller.js";
+import validateToken from "../middleware/validateTokenHandler.js";
 
 const router = express.Router();
 
+router.use(validateToken);
 router.get("/", fetchExistingPlaylists);
 router.post("/", createNewPlaylist);
 router.patch("/:id", updateExistingPlaylist);
