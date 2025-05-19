@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import Track from "../models/track.model.js";
 
 /**
@@ -29,73 +28,34 @@ import Track from "../models/track.model.js";
 
 /**
  * @swagger
- * /tracks:
+ * /tracks/{id}:
  *   get:
- *     summary: Fetch all tracks
+ *     summary: Fetch the currently authenticated user's tracks
  *     tags:
  *       - track
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: A list of tracks
+ *         description: Authenticated user's tracks
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
  *                 $ref: "#/components/schemas/Track"
+ *       401:
+ *         description: User is not authorized or token is missing
  *       404:
  *         description: No tracks found
  */
-export const fetchAllTracks = async (req, res) => {
+export const fetchExistingTracks = async (req, res) => {
     try {
-        const tracks = await Track.find();
-        if (tracks.length > 0) {
-            return res.status(200).json(tracks);
+        const tracks = await Track.find({ userId: req.user.id });
+        if (tracks.length === 0) {
+            return res.status(404).json({ message: "No tracks found" });
         }
-        return res.status(404).json({ message: "No tracks found" });
-    } catch (error) {
-        console.error("Error fetching tracks:", error);
-        return res.status(500).json({ message: "Internal server error" });
-    }
-};
-
-/**
- * @swagger
- * /tracks/{id}:
- *   get:
- *     summary: Fetch a specific track by ID
- *     tags:
- *       - track
- *     parameters:
- *       - name: id
- *         in: path
- *         description: ID of the track to fetch
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: A specific track
- *         content:
- *           application/json:
- *             schema:
- *               $ref: "#/components/schemas/Track"
- *       400:
- *         description: Invalid ID supplied
- *       404:
- *         description: Track not found
- */
-export const fetchTrackById = async (req, res) => {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: "Invalid ID supplied" });
-    }
-    try {
-        const track = await Track.findById(id);
-        if (track) {
-            return res.status(200).json(track);
-        }
-        return res.status(404).json({ message: "Track not found" });
+        return res.status(200).json(tracks);
     } catch (error) {
         console.error("Error fetching track:", error);
         return res.status(500).json({ message: "Internal server error" });
@@ -106,11 +66,13 @@ export const fetchTrackById = async (req, res) => {
  * @swagger
  * /tracks:
  *   post:
- *     summary: Create a new track
+ *     summary: Create the currently authenticated user's track
  *     tags:
  *       - track
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
@@ -122,9 +84,6 @@ export const fetchTrackById = async (req, res) => {
  *                 type: string
  *               genre:
  *                 type: string
- *               userId:
- *                 type: string
- *                 format: objectid
  *     responses:
  *       201:
  *         description: Track created successfully
@@ -132,16 +91,19 @@ export const fetchTrackById = async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/Track"
- *       400:
- *         description: Invalid ID supplied
+ *       401:
+ *         description: User is not authorized or token is missing
  */
 export const createNewTrack = async (req, res) => {
+    const { title, description, genre } = req.body;
     try {
-        if (req.body._id && !mongoose.Types.ObjectId.isValid(req.body._id)) {
-            return res.status(400).json({ message: "Invalid ID supplied" });
-        }
-        const newTrack = await Track.create(req.body);
-        return res.status(201).json(newTrack);
+        const track = await Track.create({
+            title,
+            description,
+            genre,
+            userId: req.user.id,
+        });
+        return res.status(201).json(track);
     } catch (error) {
         console.error("Error creating track:", error);
         return res.status(500).json({ message: "Internal server error" });
@@ -152,18 +114,19 @@ export const createNewTrack = async (req, res) => {
  * @swagger
  * /tracks/{id}:
  *   patch:
- *     summary: Update an existing track
+ *     summary: Update the currently authenticated user's track
  *     tags:
  *       - track
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - name: id
- *         in: path
- *         description: ID of the track to update
+ *       - in: path
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
@@ -175,9 +138,6 @@ export const createNewTrack = async (req, res) => {
  *                 type: string
  *               genre:
  *                 type: string
- *               userId:
- *                 type: string
- *                 format: objectid
  *     responses:
  *       200:
  *         description: Track updated successfully
@@ -185,26 +145,30 @@ export const createNewTrack = async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/Track"
- *       400:
- *         description: Invalid ID supplied
+ *       401:
+ *         description: User is not authorized or token is missing
+ *       403:
+ *         description: User does not have permission to update another user's track
  *       404:
  *         description: Track not found
  */
 export const updateExistingTrack = async (req, res) => {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: "Invalid ID supplied" });
-    }
     try {
+        const track = await Track.findById(req.params.id);
+        if (!track) {
+            return res.status(404).json({ message: "Track not found" });
+        }
+        if (track.userId.toString() !== req.user.id) {
+            return res.status(403).json({
+                message: "User does not have permission to update another user's track",
+            });
+        }
         const updatedTrack = await Track.findByIdAndUpdate(
-            id,
+            req.params.id,
             { $set: req.body },
             { new: true, runValidators: true }
         );
-        if (updatedTrack) {
-            return res.status(200).json(updatedTrack)
-        };
-        return res.status(404).json({ message: "Track not found" });
+        return res.status(200).json(updatedTrack);
     } catch (error) {
         console.error("Error updating track:", error);
         return res.status(500).json({ message: "Internal server error" });
@@ -215,42 +179,40 @@ export const updateExistingTrack = async (req, res) => {
  * @swagger
  * /tracks/{id}:
  *   delete:
- *     summary: Delete a track
+ *     summary: Delete the currently authenticated user's track
  *     tags:
  *       - track
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - name: id
- *         in: path
- *         description: ID of the track to delete
+ *       - in: path
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
  *     responses:
  *       200:
  *         description: Track deleted successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *       400:
- *         description: Invalid ID supplied
+ *       401:
+ *         description: User is not authorized or token is missing
+ *       403:
+ *         description: User does not have permission to delete another user's track
  *       404:
  *         description: Track not found
  */
 export const deleteExistingTrack = async (req, res) => {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: "Invalid ID supplied" });
-    }
     try {
-        const deleted = await Track.findByIdAndDelete(id);
-        if (deleted) {
-            return res.status(200).json({ message: "Track deleted successfully" });
+        const track = await Track.findById(req.params.id);
+        if (!track) {
+            return res.status(404).json({ message: "Track not found" });
         }
-        return res.status(404).json({ message: "Track not found" });
+        if (track.userId.toString() !== req.user.id) {
+            return res.status(403).json({
+                message: "User does not have permission to delete another user's track",
+            });
+        }
+        await Track.findByIdAndDelete(req.params.id);
+        return res.status(200).json({ message: "Track deleted successfully" });
     } catch (error) {
         console.error("Error deleting track:", error);
         return res.status(500).json({ message: "Internal server error" });

@@ -1,16 +1,14 @@
 import express from "express";
 import {
-    fetchAllTracks,
-    fetchTrackById,
+    fetchExistingTracks,
     createNewTrack,
     updateExistingTrack,
-    deleteExistingTrack
+    deleteExistingTrack,
 } from "../controllers/tracks.controller.js";
 
 const router = express.Router();
 
-router.get("/", fetchAllTracks);
-router.get("/:id", fetchTrackById);
+router.get("/:id", fetchExistingTracks);
 router.post("/", createNewTrack);
 router.patch("/:id", updateExistingTrack);
 router.delete("/:id", deleteExistingTrack);
