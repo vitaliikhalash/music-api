@@ -3,11 +3,6 @@ import Playlist from "../models/playlist.model.js";
 /**
  * @swagger
  * components:
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
  *   schemas:
  *     Playlist:
  *       type: object
@@ -102,8 +97,6 @@ export const fetchExistingPlaylists = async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/Playlist"
- *       400:
- *         description: All fields are mandatory
  *       401:
  *         description: User is not authorized or token is missing
  */
@@ -165,7 +158,7 @@ export const createNewPlaylist = async (req, res) => {
  *       401:
  *         description: User is not authorized or token is missing
  *       403:
- *         description: User doesn't have permission to update other user playlist
+ *         description: User does not have permission to update another user's playlist
  *       404:
  *         description: Playlist not found
  */
