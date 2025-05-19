@@ -10,24 +10,32 @@ import User from "../models/user.model.js";
  *     User:
  *       type: object
  *       required:
- *         - name
+ *         - username
  *         - email
  *         - password
  *       properties:
  *         _id:
  *           type: string
  *           format: objectid
- *         name:
+ *         username:
  *           type: string
  *         email:
  *           type: string
  *         password:
  *           type: string
+ *         phoneNumber:
+ *           type: string
+ *           example: 1234567890
  *         birthDate:
  *           type: string
  *           format: date
  *         gender:
  *           type: string
+ *           enum:
+ *             - male
+ *             - female
+ *             - other
+ *             - prefer not to say
  * tags:
  *   - name: user
  *     description: Operations about user
@@ -47,21 +55,29 @@ import User from "../models/user.model.js";
  *           schema:
  *             type: object
  *             required:
- *               - name
+ *               - username
  *               - email
  *               - password
  *             properties:
- *               name:
+ *               username:
  *                 type: string
  *               email:
  *                 type: string
  *               password:
  *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *                 example: 1234567890
  *               birthDate:
  *                 type: string
  *                 format: date
  *               gender:
  *                 type: string
+ *                 enum:
+ *                   - male
+ *                   - female
+ *                   - other
+ *                   - prefer not to say
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -80,22 +96,23 @@ import User from "../models/user.model.js";
  *         description: Email or username already taken
  */
 export const registerUser = async (req, res) => {
-    const { name, email, password, birthDate, gender } = req.body;
+    const { username, email, password, phoneNumber, birthDate, gender } = req.body;
     try {
-        if (!name || !email || !password) {
+        if (!username || !email || !password) {
             return res.status(400).json({ message: "All fields are mandatory" });
         }
         const existingEmail = await User.findOne({ email: email.toLowerCase() });
-        const existingUsername = await User.findOne({ name });
+        const existingUsername = await User.findOne({ username });
         if (existingUsername) {
             return res.status(409).json({ message: "Username already taken" });
         } else if (existingEmail) {
             return res.status(409).json({ message: "Email already in use" });
         }
         const user = await User.create({
-            name,
+            username,
             email,
             password,
+            phoneNumber,
             birthDate,
             gender,
         });
