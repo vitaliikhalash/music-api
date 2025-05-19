@@ -1,5 +1,5 @@
-const mongoose = require("mongoose");
-const Track = require("../models/track.model");
+import mongoose from "mongoose";
+import Track from "../models/track.model.js";
 
 /**
  * @swagger
@@ -8,36 +8,32 @@ const Track = require("../models/track.model");
  *     Track:
  *       type: object
  *       required:
- *         - title
- *         - author
- *         - duration
- *         - genre
+ *         - userId
  *       properties:
  *         _id:
  *           type: string
- *           description: MongoDB ObjectId (24 hex characters)
- *           example: "000000000000000000000001"
+ *           format: objectid
+ *         userId:
+ *           type: string
+ *           format: objectid
  *         title:
  *           type: string
- *         author:
+ *         description:
  *           type: string
- *         duration:
- *           type: number
  *         genre:
  *           type: string
- *         likes:
- *           type: number
  * tags:
- *   - name: "track"
- *     description: "Operations about tracks"
+ *   - name: track
+ *     description: Operations about track
  */
 
 /**
  * @swagger
  * /tracks:
  *   get:
- *     summary: Get all tracks
- *     tags: [track]
+ *     summary: Fetch all tracks
+ *     tags:
+ *       - track
  *     responses:
  *       200:
  *         description: A list of tracks
@@ -46,59 +42,64 @@ const Track = require("../models/track.model");
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Track'
+ *                 $ref: "#/components/schemas/Track"
  *       404:
  *         description: No tracks found
  */
-const fetchAllTracks = async (req, res) => {
-  try {
-    const tracks = await Track.find();
-    if (tracks.length > 0) return res.status(200).json(tracks);
-    return res.status(404).json({ message: "No tracks found" });
-  } catch (error) {
-    console.error("Error fetching tracks:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
+export const fetchAllTracks = async (req, res) => {
+    try {
+        const tracks = await Track.find();
+        if (tracks.length > 0) {
+            return res.status(200).json(tracks);
+        }
+        return res.status(404).json({ message: "No tracks found" });
+    } catch (error) {
+        console.error("Error fetching tracks:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
 };
 
 /**
  * @swagger
  * /tracks/{id}:
  *   get:
- *     summary: Get a specific track by ID
- *     tags: [track]
+ *     summary: Fetch a specific track by ID
+ *     tags:
+ *       - track
  *     parameters:
  *       - name: id
  *         in: path
+ *         description: ID of the track to fetch
  *         required: true
- *         description: ID of the track to retrieve (24-character hex string)
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: A single track
+ *         description: A specific track
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Track'
+ *               $ref: "#/components/schemas/Track"
  *       400:
- *         description: Invalid ID
+ *         description: Invalid ID supplied
  *       404:
  *         description: Track not found
  */
-const fetchTrackById = async (req, res) => {
-  const { id } = req.params;
-  if (!mongoose.Types.ObjectId.isValid(id))
-    return res.status(400).json({ message: "Invalid ID" });
-
-  try {
-    const track = await Track.findById(id);
-    if (track) return res.status(200).json(track);
-    return res.status(404).json({ message: "Track not found" });
-  } catch (error) {
-    console.error("Error fetching track:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
+export const fetchTrackById = async (req, res) => {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid ID supplied" });
+    }
+    try {
+        const track = await Track.findById(id);
+        if (track) {
+            return res.status(200).json(track);
+        }
+        return res.status(404).json({ message: "Track not found" });
+    } catch (error) {
+        console.error("Error fetching track:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
 };
 
 /**
@@ -106,37 +107,45 @@ const fetchTrackById = async (req, res) => {
  * /tracks:
  *   post:
  *     summary: Create a new track
- *     tags: [track]
+ *     tags:
+ *       - track
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Track'
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               genre:
+ *                 type: string
+ *               userId:
+ *                 type: string
+ *                 format: objectid
  *     responses:
  *       201:
  *         description: Track created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Track'
+ *               $ref: "#/components/schemas/Track"
  *       400:
- *         description: Invalid _id format
- *       500:
- *         description: Internal server error
+ *         description: Invalid ID supplied
  */
-const createNewTrack = async (req, res) => {
-  try {
-    if (req.body._id && !mongoose.Types.ObjectId.isValid(req.body._id)) {
-      return res.status(400).json({ message: "Invalid _id format" });
+export const createNewTrack = async (req, res) => {
+    try {
+        if (req.body._id && !mongoose.Types.ObjectId.isValid(req.body._id)) {
+            return res.status(400).json({ message: "Invalid ID supplied" });
+        }
+        const newTrack = await Track.create(req.body);
+        return res.status(201).json(newTrack);
+    } catch (error) {
+        console.error("Error creating track:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
-
-    const newTrack = await Track.create(req.body);
-    return res.status(201).json(newTrack);
-  } catch (error) {
-    console.error("Error creating track:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
 };
 
 /**
@@ -144,12 +153,13 @@ const createNewTrack = async (req, res) => {
  * /tracks/{id}:
  *   patch:
  *     summary: Update an existing track
- *     tags: [track]
+ *     tags:
+ *       - track
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
+ *         description: ID of the track to update
  *         required: true
- *         description: ID of the track to update (24-character hex string)
  *         schema:
  *           type: string
  *     requestBody:
@@ -157,49 +167,62 @@ const createNewTrack = async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Track'
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               genre:
+ *                 type: string
+ *               userId:
+ *                 type: string
+ *                 format: objectid
  *     responses:
  *       200:
  *         description: Track updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Track'
+ *               $ref: "#/components/schemas/Track"
  *       400:
- *         description: Invalid ID
+ *         description: Invalid ID supplied
  *       404:
  *         description: Track not found
  */
-const updateExistingTrack = async (req, res) => {
-  const { id } = req.params;
-  if (!mongoose.Types.ObjectId.isValid(id))
-    return res.status(400).json({ message: "Invalid ID" });
-
-  try {
-    const updatedTrack = await Track.findByIdAndUpdate(
-      id,
-      { $set: req.body },
-      { new: true, runValidators: true }
-    );
-    if (updatedTrack) return res.status(200).json(updatedTrack);
-    return res.status(404).json({ message: "Track not found" });
-  } catch (error) {
-    console.error("Error updating track:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
+export const updateExistingTrack = async (req, res) => {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid ID supplied" });
+    }
+    try {
+        const updatedTrack = await Track.findByIdAndUpdate(
+            id,
+            { $set: req.body },
+            { new: true, runValidators: true }
+        );
+        if (updatedTrack) {
+            return res.status(200).json(updatedTrack)
+        };
+        return res.status(404).json({ message: "Track not found" });
+    } catch (error) {
+        console.error("Error updating track:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
 };
 
 /**
  * @swagger
  * /tracks/{id}:
  *   delete:
- *     summary: Delete a track by ID
- *     tags: [track]
+ *     summary: Delete a track
+ *     tags:
+ *       - track
  *     parameters:
  *       - name: id
  *         in: path
+ *         description: ID of the track to delete
  *         required: true
- *         description: ID of the track to delete (24-character hex string)
  *         schema:
  *           type: string
  *     responses:
@@ -212,32 +235,24 @@ const updateExistingTrack = async (req, res) => {
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Track deleted successfully
  *       400:
- *         description: Invalid ID
+ *         description: Invalid ID supplied
  *       404:
  *         description: Track not found
  */
-const deleteExistingTrack = async (req, res) => {
-  const { id } = req.params;
-  if (!mongoose.Types.ObjectId.isValid(id))
-    return res.status(400).json({ message: "Invalid ID" });
-
-  try {
-    const deleted = await Track.findByIdAndDelete(id);
-    if (deleted)
-      return res.status(200).json({ message: "Track deleted successfully" });
-    return res.status(404).json({ message: "Track not found" });
-  } catch (error) {
-    console.error("Error deleting track:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-module.exports = {
-  fetchAllTracks,
-  fetchTrackById,
-  createNewTrack,
-  updateExistingTrack,
-  deleteExistingTrack,
+export const deleteExistingTrack = async (req, res) => {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid ID supplied" });
+    }
+    try {
+        const deleted = await Track.findByIdAndDelete(id);
+        if (deleted) {
+            return res.status(200).json({ message: "Track deleted successfully" });
+        }
+        return res.status(404).json({ message: "Track not found" });
+    } catch (error) {
+        console.error("Error deleting track:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
 };
