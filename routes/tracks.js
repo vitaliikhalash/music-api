@@ -1,18 +1,18 @@
-const express = require('express');
-const router = express.Router();
-
-const {
-    fetchAllTracks,
-    fetchTrackById,
+import express from "express";
+import {
+    fetchExistingTracks,
     createNewTrack,
     updateExistingTrack,
-    deleteExistingTrack
-} = require('../controllers/tracks.controller');
+    deleteExistingTrack,
+} from "../controllers/tracks.controller.js";
+import validateToken from "../middleware/validateTokenHandler.js";
 
-router.get('/', fetchAllTracks);
-router.get('/:id', fetchTrackById);
-router.post('/', createNewTrack);
-router.patch('/:id', updateExistingTrack);
-router.delete('/:id', deleteExistingTrack);
+const router = express.Router();
 
-module.exports = router;
+router.use(validateToken);
+router.get("/:id", fetchExistingTracks);
+router.post("/", createNewTrack);
+router.patch("/:id", updateExistingTrack);
+router.delete("/:id", deleteExistingTrack);
+
+export default router;
