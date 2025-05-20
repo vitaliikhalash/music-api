@@ -1,8 +1,7 @@
 import express from "express";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import Playlist from "../models/playlist.model.js";
+
+const router = express.Router();
 
 /**
  * @swagger
@@ -28,24 +27,13 @@ import Playlist from "../models/playlist.model.js";
  *               format: binary
  */
 
-const router = express.Router();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 router.get("/", async (req, res) => {
     try {
-        const data = await Playlist.find();
-        const exportPath = path.join(__dirname, "..", "exports", "data.json");
-
-        fs.writeFileSync(exportPath, JSON.stringify(data, null, 2));
-
-        res.download(exportPath, "data.json", (err) => {
-            if (err) {
-                console.error("Download error:", err);
-                res.status(500).send("Download error");
-            }
-        });
+        const playlists = await Playlist.find({ userId: req.user.id });
+        const jsonData = JSON.stringify(playlists, null, 2);
+        res.setHeader("Content-Disposition", `attachment; filename=data_${req.user.id}.json`);
+        res.setHeader("Content-Type", "application/octet-stream");
+        res.send(jsonData);
     } catch (err) {
         console.error("Export error:", err);
         res.status(500).send("Export failed");
