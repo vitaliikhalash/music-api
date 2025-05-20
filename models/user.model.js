@@ -93,11 +93,12 @@ userSchema.pre("save", async function (next) {
 
 userSchema.set("toJSON", {
     transform: function (doc, ret) {
+        delete ret.password;
         if (ret.birthDate) {
             ret.birthDate = ret.birthDate.toISOString().split("T")[0];
         }
         return ret;
-    },
+    }
 });
 
 const User = model("user", userSchema);
