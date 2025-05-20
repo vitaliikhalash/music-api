@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import exports from "./routes/exports.js";
 import tracks from "./routes/tracks.js";
 import playlists from "./routes/playlists.js";
 import users from "./routes/users.js";
@@ -24,13 +25,14 @@ const swaggerOptions = {
             version: "1.0.0",
         },
     },
-    apis: ["./controllers/*.js"],
+    apis: ["./controllers/*.js", "./routes/exports.js"],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
+app.use("/exports", exports);
 app.use("/tracks", tracks);
 app.use("/playlists", playlists);
 app.use("/users", users);
