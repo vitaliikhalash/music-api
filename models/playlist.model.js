@@ -44,5 +44,5 @@ const playlistSchema = new Schema(
     }
 );
 
-const Playlist = model('playlist', playlistSchema);
+const Playlist = model("Playlist", playlistSchema);
 export default Playlist;

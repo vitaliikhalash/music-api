@@ -32,7 +32,7 @@ const router = express.Router();
 
 router.get("/", validateToken, async (req, res) => {
     try {
-        const playlists = await Playlist.find({ userId: req.user.id });
+        const playlists = await Playlist.find({ userId: req.user.id }).populate("trackIds");
         const jsonData = JSON.stringify(playlists, null, 2);
         res.setHeader("Content-Disposition", `attachment; filename=data_${req.user.id}.json`);
         res.setHeader("Content-Type", "application/octet-stream");
