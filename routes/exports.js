@@ -1,5 +1,6 @@
 import express from "express";
 import Playlist from "../models/playlist.model.js";
+import validateToken from "../middleware/validateTokenHandler.js";
 
 const router = express.Router();
 
@@ -17,6 +18,8 @@ const router = express.Router();
  *     summary: Export all data to a JSON file
  *     tags:
  *       - export
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Successful download of the JSON file
@@ -27,7 +30,7 @@ const router = express.Router();
  *               format: binary
  */
 
-router.get("/", async (req, res) => {
+router.get("/", validateToken, async (req, res) => {
     try {
         const playlists = await Playlist.find({ userId: req.user.id });
         const jsonData = JSON.stringify(playlists, null, 2);
