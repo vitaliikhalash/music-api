@@ -281,19 +281,13 @@ export const fetchCurrentUser = async (req, res) => {
  */
 export const updateCurrentUser = async (req, res) => {
     try {
-        const updatedData = { ...req.body };
-        if (updatedData.password) {
-            updatedData.password = await bcrypt.hash(updatedData.password, 12);
-        }
-        const updatedUser = await User.findByIdAndUpdate(
-            req.user.id,
-            { $set: updatedData },
-            { new: true, runValidators: true }
-        );
-        if (!updatedUser) {
+        const user = await User.findById(req.user.id);
+        if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        return res.status(200).json(updatedUser);
+        Object.assign(user, req.body);
+        await user.save();
+        return res.status(200).json(user);
     } catch (error) {
         console.error("Error updating user:", error);
         return res.status(500).json({ message: "Internal server error" });
