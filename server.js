@@ -7,7 +7,6 @@ import users from "./routes/users.js";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import connectToDB from "./db/connection.js";
-import exports from "./routes/exports.js"; 
 
 const PORT = process.env.PORT || 3000;
 const app = express();
