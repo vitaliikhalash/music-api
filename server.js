@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import exports from "./routes/exports.js";
+import tracks from "./routes/tracks.js";
 import playlists from "./routes/playlists.js";
 import users from "./routes/users.js";
 import swaggerJsdoc from "swagger-jsdoc";
@@ -25,16 +26,17 @@ const swaggerOptions = {
             version: "1.0.0",
         },
     },
-    apis: ['./controllers/*.js', './routes/exports.js'],
+    apis: ["./controllers/*.js", "./routes/exports.js"],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
+app.use("/exports", exports);
+app.use("/tracks", tracks);
 app.use("/playlists", playlists);
 app.use("/users", users);
-app.use("/exports", exports);
 
 // Start the Express server
 app.listen(PORT, () => {

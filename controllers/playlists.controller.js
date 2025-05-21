@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import Playlist from "../models/playlist.model.js";
 
 /**
@@ -8,108 +7,61 @@ import Playlist from "../models/playlist.model.js";
  *     Playlist:
  *       type: object
  *       required:
- *         - title
- *         - trackIds
  *         - userId
  *       properties:
  *         _id:
  *           type: string
  *           format: objectid
+ *         userId:
+ *           type: string
+ *           format: objectid
  *         title:
+ *           type: string
+ *         description:
  *           type: string
  *         trackIds:
  *           type: array
  *           items:
  *             type: string
  *             format: objectid
- *         userId:
- *           type: string
- *           format: objectid
- *         createdAt:
- *           type: string
- *           format: date-time
- *         updatedAt:
- *           type: string
- *           format: date-time
  * tags:
- *   - name: "playlist"
- *     description: "Operations about playlist"
+ *   - name: playlist
+ *     description: Operations about playlist
  */
 
 /**
  * @swagger
  * /playlists:
  *   get:
- *     summary: Get all playlists
+ *     summary: Fetch the currently authenticated user's playlists
  *     tags:
  *       - playlist
- *     produces:
- *       - application/json
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: A list of playlists
+ *         description: Authenticated user's playlists
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Playlist'
+ *                 $ref: "#/components/schemas/Playlist"
+ *       401:
+ *         description: User is not authorized or token is missing
  *       404:
  *         description: No playlists found
  */
-export const fetchAllPlaylists = async (req, res) => {
+export const fetchExistingPlaylists = async (req, res) => {
     try {
-        const playlists = await Playlist.find();
-        if (playlists.length > 0) {
-            return res.status(200).json(playlists);
+        const playlists = await Playlist.find({ userId: req.user.id });
+        if (playlists.length === 0) {
+            return res.status(404).json({ message: "No playlists found" });
         }
-        return res.status(404).json({ message: 'No playlists found' });
+        return res.status(200).json(playlists);
     } catch (error) {
-        console.error('Error getting playlists:', error);
-        return res.status(500).json({ message: 'Internal server error' });
-    }
-};
-
-/**
- * @swagger
- * /playlists/{id}:
- *   get:
- *     summary: Get a specific playlist by ID
- *     tags:
- *       - playlist
- *     parameters:
- *       - name: id
- *         in: path
- *         description: ID of the playlist to retrieve
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: A specific playlist
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Playlist'
- *       400:
- *         description: Invalid ID supplied
- *       404:
- *         description: Playlist not found
- */
-export const fetchPlaylistById = async (req, res) => {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: 'Invalid ID supplied' });
-    }
-    try {
-        const playlist = await Playlist.findById(id).exec();
-        if (playlist) {
-            return res.status(200).json(playlist);
-        }
-        return res.status(404).json({ message: 'Playlist not found' });
-    } catch (error) {
-        console.error('Error fetching playlist by ID:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        console.error("Error getting playlists:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 
@@ -117,31 +69,50 @@ export const fetchPlaylistById = async (req, res) => {
  * @swagger
  * /playlists:
  *   post:
- *     summary: Create a new playlist
+ *     summary: Create the currently authenticated user's playlist
  *     tags:
  *       - playlist
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Playlist'
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               trackIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: objectid
  *     responses:
  *       201:
  *         description: Playlist created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Playlist'
+ *               $ref: "#/components/schemas/Playlist"
+ *       401:
+ *         description: User is not authorized or token is missing
  */
 export const createNewPlaylist = async (req, res) => {
-    const playlistData = req.body;
+    const { title, description, trackIds } = req.body;
     try {
-        const playlist = await Playlist.create(playlistData);
+        const playlist = await Playlist.create({
+            title,
+            description,
+            trackIds,
+            userId: req.user.id,
+        });
         return res.status(201).json(playlist);
     } catch (error) {
-        console.error('Error adding playlist:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        console.error("Error creating playlist:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 
@@ -149,9 +120,11 @@ export const createNewPlaylist = async (req, res) => {
  * @swagger
  * /playlists/{id}:
  *   patch:
- *     summary: Update an existing playlist
+ *     summary: Update the currently authenticated user's playlist
  *     tags:
  *       - playlist
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -164,37 +137,51 @@ export const createNewPlaylist = async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Playlist'
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               trackIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: objectid
  *     responses:
  *       200:
  *         description: Playlist updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Playlist'
- *       400:
- *         description: Invalid ID supplied
+ *               $ref: "#/components/schemas/Playlist"
+ *       401:
+ *         description: User is not authorized or token is missing
+ *       403:
+ *         description: User does not have permission to update another user's playlist
  *       404:
  *         description: Playlist not found
  */
 export const updateExistingPlaylist = async (req, res) => {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: 'Invalid ID supplied' });
-    }
     try {
+        const playlist = await Playlist.findById(req.params.id);
+        if (!playlist) {
+            return res.status(404).json({ message: "Playlist not found" });
+        }
+        if (playlist.userId.toString() !== req.user.id) {
+            return res.status(403).json({
+                message: "User does not have permission to update another user's playlist",
+            });
+        }
         const updatedPlaylist = await Playlist.findByIdAndUpdate(
-            id,
+            req.params.id,
             { $set: req.body },
             { new: true, runValidators: true }
         );
-        if (updatedPlaylist) {
-            return res.status(200).json(updatedPlaylist);
-        }
-        return res.status(404).json({ message: 'Playlist not found' });
+        return res.status(200).json(updatedPlaylist);
     } catch (error) {
-        console.error('Error updating playlist:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        console.error("Error updating playlist:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 
@@ -202,9 +189,11 @@ export const updateExistingPlaylist = async (req, res) => {
  * @swagger
  * /playlists/{id}:
  *   delete:
- *     summary: Remove a playlist by ID
+ *     summary: Delete the currently authenticated user's playlist
  *     tags:
  *       - playlist
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -214,7 +203,7 @@ export const updateExistingPlaylist = async (req, res) => {
  *           type: string
  *     responses:
  *       200:
- *         description: Playlist removed successfully
+ *         description: Playlist deleted successfully
  *         content:
  *           application/json:
  *             schema:
@@ -222,25 +211,28 @@ export const updateExistingPlaylist = async (req, res) => {
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Playlist removed successfully
- *       400:
- *         description: Invalid ID supplied
+ *       401:
+ *         description: User is not authorized or token is missing
+ *       403:
+ *         description: User does not have permission to delete another user's playlist
  *       404:
  *         description: Playlist not found
  */
 export const deleteExistingPlaylist = async (req, res) => {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: 'Invalid ID supplied' });
-    }
     try {
-        const result = await Playlist.findByIdAndDelete(id);
-        if (result) {
-            return res.status(200).json({ message: 'Playlist removed successfully' });
+        const playlist = await Playlist.findById(req.params.id);
+        if (!playlist) {
+            return res.status(404).json({ message: "Playlist not found" });
         }
-        return res.status(404).json({ message: 'Playlist not found' });
+        if (playlist.userId.toString() !== req.user.id) {
+            return res.status(403).json({
+                message: "User does not have permission to delete another user's playlist",
+            });
+        }
+        await Playlist.findByIdAndDelete(req.params.id);
+        return res.status(200).json({ message: "Playlist deleted successfully" });
     } catch (error) {
-        console.error('Error removing playlist:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        console.error("Error removing playlist:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
