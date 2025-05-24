@@ -176,7 +176,7 @@ export const loginUser = async (req, res) => {
             return res.status(400).json({ message: "All fields are mandatory" });
         }
         const user = await User.findOne({ email });
-        if (user && (await bcrypt.compare(password, user.password))) {
+        if (user && bcrypt.compare(password, user.passwordHash)) {
             const accessToken = jwt.sign(
                 {
                     user: {

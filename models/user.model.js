@@ -30,11 +30,9 @@ const userSchema = new Schema(
                 message: "Invalid email address",
             },
         },
-        password: {
+        passwordHash: {
             type: String,
-            required: [true, "User password is required"],
-            minlength: [8, "Password must be at least 8 characters long"],
-            maxlength: [30, "Password must be at most 30 characters long"],
+            required: false,
         },
         phoneNumber: {
             type: String,
@@ -81,10 +79,28 @@ const userSchema = new Schema(
     }
 );
 
+userSchema.virtual("password")
+    .set(function (value) {
+        this.$locals._password = value;
+        if (!value) {
+            this.invalidate("password", "Password is required");
+        }
+        if (value.length < 8) {
+            this.invalidate("password", "Password must be at least 8 characters long");
+        }
+        if (value.length > 30) {
+            this.invalidate("password", "Password must be at most 30 characters long");
+        }
+    })
+    .get(function () {
+        return this.$locals.password;
+    });
+
 userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
     try {
-        this.password = await bcrypt.hash(this.password, 12);
+        if (this.$locals._password) {
+            this.passwordHash = await bcrypt.hash(this.$locals._password, 12);
+        }
         next();
     } catch (err) {
         next(err);
@@ -93,12 +109,12 @@ userSchema.pre("save", async function (next) {
 
 userSchema.set("toJSON", {
     transform: function (doc, ret) {
-        delete ret.password;
+        delete ret.passwordHash;
         if (ret.birthDate) {
             ret.birthDate = ret.birthDate.toISOString().split("T")[0];
         }
         return ret;
-    }
+    },
 });
 
 const User = model("User", userSchema);
