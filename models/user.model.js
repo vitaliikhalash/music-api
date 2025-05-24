@@ -93,7 +93,7 @@ userSchema.virtual("password")
         }
     })
     .get(function () {
-        return this.$locals.password;
+        return this.$locals._password;
     });
 
 userSchema.pre("save", async function (next) {
