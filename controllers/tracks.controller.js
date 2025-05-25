@@ -21,6 +21,10 @@ import Track from "../models/track.model.js";
  *           type: string
  *         genre:
  *           type: string
+ *         tags:
+ *           type: array
+ *           items:
+ *             type: string
  * tags:
  *   - name: track
  *     description: Operations about track
@@ -28,13 +32,46 @@ import Track from "../models/track.model.js";
 
 /**
  * @swagger
- * /tracks/{id}:
+ * /tracks:
  *   get:
- *     summary: Fetch the currently authenticated user's tracks
+ *     summary: Fetch the currently authenticated user's tracks with optional filters
  *     tags:
  *       - track
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: Filter by title
+ *       - in: query
+ *         name: description
+ *         schema:
+ *           type: string
+ *         description: Filter by description
+ *       - in: query
+ *         name: genre
+ *         schema:
+ *           type: string
+ *         description: Filter by genre
+ *       - in: query
+ *         name: tags
+ *         schema:
+ *           type: string
+ *         description: Filter by tags (comma-separated)
+ *       - in: query
+ *         name: createdAt
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter by creation date
+ *       - in: query
+ *         name: updatedAt
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter by update date
  *     responses:
  *       200:
  *         description: Authenticated user's tracks
@@ -51,13 +88,27 @@ import Track from "../models/track.model.js";
  */
 export const fetchExistingTracks = async (req, res) => {
     try {
-        const tracks = await Track.find({ userId: req.user.id });
+        const { title, description, genre, tags, createdAt, updatedAt } = req.query;
+        const filter = { userId: req.user.id };
+
+        if (title) filter.title = { $regex: title, $options: "i" };
+        if (description) filter.description = { $regex: description, $options: "i" };
+        if (genre) filter.genre = { $regex: genre, $options: "i" };
+        if (tags) {
+            let tagsArray = Array.isArray(tags) ? tags : tags.split(",");
+            tagsArray = tagsArray.map(tag => tag.trim()).filter(Boolean);
+            if (tagsArray.length > 0) filter.tags = { $all: tagsArray };
+        }
+        if (createdAt) filter.createdAt = { $gte: new Date(createdAt) };
+        if (updatedAt) filter.updatedAt = { $gte: new Date(updatedAt) };
+
+        const tracks = await Track.find(filter);
         if (tracks.length === 0) {
             return res.status(404).json({ message: "No tracks found" });
         }
         return res.status(200).json(tracks);
     } catch (error) {
-        console.error("Error fetching track:", error);
+        console.error("Error fetching tracks:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 };
@@ -84,6 +135,10 @@ export const fetchExistingTracks = async (req, res) => {
  *                 type: string
  *               genre:
  *                 type: string
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
  *     responses:
  *       201:
  *         description: Track created successfully
@@ -95,12 +150,13 @@ export const fetchExistingTracks = async (req, res) => {
  *         description: User is not authorized or token is missing
  */
 export const createNewTrack = async (req, res) => {
-    const { title, description, genre } = req.body;
+    const { title, description, genre, tags } = req.body;
     try {
         const track = await Track.create({
             title,
             description,
             genre,
+            tags,
             userId: req.user.id,
         });
         return res.status(201).json(track);
@@ -138,6 +194,10 @@ export const createNewTrack = async (req, res) => {
  *                 type: string
  *               genre:
  *                 type: string
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
  *     responses:
  *       200:
  *         description: Track updated successfully
@@ -185,14 +245,22 @@ export const updateExistingTrack = async (req, res) => {
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
+ *         description: ID of the track to delete
  *         required: true
  *         schema:
  *           type: string
  *     responses:
  *       200:
  *         description: Track deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
  *       401:
  *         description: User is not authorized or token is missing
  *       403:
