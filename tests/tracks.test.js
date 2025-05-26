@@ -121,6 +121,135 @@ describe("Tracks Controller", () => {
       expect(response.status).toBe(500);
       expect(response.body.message).toBe("Internal server error");
     });
+
+    it("should filter by title", async () => {
+      const track = await Track.create({
+        title: "Relaxing Jazz",
+        description: "Smooth and chill",
+        genre: "Jazz",
+        tags: ["chill"],
+        userId,
+      });
+
+      const res = await request(app)
+        .get("/tracks?title=Relaxing Jazz")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].title).toBe(track.title);
+    });
+
+    it("should filter by description", async () => {
+      const track = await Track.create({
+        title: "Morning Rock",
+        description: "Energetic vibes",
+        genre: "Rock",
+        tags: ["morning"],
+        userId,
+      });
+
+      const res = await request(app)
+        .get("/tracks?description=Energetic vibes")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].title).toBe(track.title);
+    });
+
+    it("should filter by genre", async () => {
+      const track = await Track.create({
+        title: "Chill Beats",
+        description: "Relaxing",
+        genre: "Electronic",
+        tags: ["calm"],
+        userId,
+      });
+
+      const res = await request(app)
+        .get("/tracks?genre=Electronic")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].title).toBe(track.title);
+    });
+
+    it("should filter by single tag", async () => {
+      const track = await Track.create({
+        title: "Tag Test",
+        description: "Tag filtering",
+        genre: "Any",
+        tags: ["focus"],
+        userId,
+      });
+
+      const res = await request(app)
+        .get("/tracks?tags=focus")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].title).toBe(track.title);
+    });
+
+    it("should filter by multiple tags", async () => {
+      const track = await Track.create({
+        title: "Multi Tag Track",
+        description: "Tagged with chill and evening",
+        genre: "Jazz",
+        tags: ["chill", "evening"],
+        userId,
+      });
+
+      const res = await request(app)
+        .get("/tracks?tags=chill,evening")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].title).toBe(track.title);
+    });
+
+    it("should filter by createdAt", async () => {
+      const track = await Track.create({
+        title: "CreatedAt Track",
+        description: "Has createdAt",
+        genre: "Pop",
+        tags: [],
+        userId,
+        createdAt: new Date("2024-01-01"),
+      });
+
+      const res = await request(app)
+        .get("/tracks?createdAt=2024-01-01")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].title).toBe(track.title);
+    });
+
+    it("should filter by updatedAt", async () => {
+      const track = await Track.create({
+        title: "UpdatedAt Track",
+        description: "Has updatedAt",
+        genre: "Pop",
+        tags: [],
+        userId,
+        updatedAt: new Date("2024-02-02"),
+      });
+
+      const res = await request(app)
+        .get("/tracks?updatedAt=2024-02-02")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].title).toBe(track.title);
+    });
+
   });
 
   describe("PATCH /tracks/:id", () => {
