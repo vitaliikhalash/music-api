@@ -10,7 +10,7 @@ import validateToken from "../middleware/validateTokenHandler.js";
 const router = express.Router();
 
 router.use(validateToken);
-router.get("/:id", fetchExistingTracks);
+router.get("/", fetchExistingTracks);
 router.post("/", createNewTrack);
 router.patch("/:id", updateExistingTrack);
 router.delete("/:id", deleteExistingTrack);

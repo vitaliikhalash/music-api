@@ -38,9 +38,24 @@ const trackSchema = new Schema(
                 message: "Genre cannot be an empty string",
             },
         },
+        tags: {
+            type: [
+                {
+                    type: String,
+                    trim: true,
+                    maxlength: [50, "Tag must be at most 50 characters long"],
+                    validate: {
+                        validator: (value) => value === undefined || value.trim().length > 0,
+                        message: "Tag cannot be an empty string",
+                    },
+                },
+            ],
+            required: false,
+        },
     },
     {
         timestamps: true,
+        versionKey: false
     }
 );
 
