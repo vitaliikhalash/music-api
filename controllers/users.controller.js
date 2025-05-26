@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import User from "../models/user.model.js";
 
 /**
@@ -95,7 +96,7 @@ import User from "../models/user.model.js";
  *                 email:
  *                   type: string
  *       400:
- *         description: Validation error
+ *         description: Missing fields or validation failed
  *       409:
  *         description: Email or username already taken
  */
@@ -124,6 +125,9 @@ export const registerUser = async (req, res) => {
             return res.status(201).json({ _id: user.id, email: user.email });
         }
     } catch (error) {
+        if (error instanceof mongoose.Error.ValidationError) {
+            return res.status(400).json({ message: Object.values(error.errors)[0].message });
+        }
         console.error("Error creating user:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
@@ -172,7 +176,7 @@ export const loginUser = async (req, res) => {
             return res.status(400).json({ message: "All fields are mandatory" });
         }
         const user = await User.findOne({ email });
-        if (user && (await bcrypt.compare(password, user.password))) {
+        if (user && bcrypt.compare(password, user.passwordHash)) {
             const accessToken = jwt.sign(
                 {
                     user: {
@@ -274,6 +278,8 @@ export const fetchCurrentUser = async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/User"
+ *       400:
+ *         description: Validation failed
  *       401:
  *         description: User is not authorized or token is missing
  *       404:
@@ -289,6 +295,9 @@ export const updateCurrentUser = async (req, res) => {
         await user.save();
         return res.status(200).json(user);
     } catch (error) {
+        if (error instanceof mongoose.Error.ValidationError) {
+            return res.status(400).json({ message: Object.values(error.errors)[0].message });
+        }
         console.error("Error updating user:", error);
         return res.status(500).json({ message: "Internal server error" });
     }

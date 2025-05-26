@@ -44,5 +44,5 @@ const trackSchema = new Schema(
     }
 );
 
-const Track = model("track", trackSchema);
+const Track = model("Track", trackSchema);
 export default Track;

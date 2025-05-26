@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Track from "../models/track.model.js";
 
 /**
@@ -91,6 +92,8 @@ export const fetchExistingTracks = async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/Track"
+ *       400:
+ *         description: Validation failed
  *       401:
  *         description: User is not authorized or token is missing
  */
@@ -105,6 +108,9 @@ export const createNewTrack = async (req, res) => {
         });
         return res.status(201).json(track);
     } catch (error) {
+        if (error instanceof mongoose.Error.ValidationError) {
+            return res.status(400).json({ message: Object.values(error.errors)[0].message });
+        }
         console.error("Error creating track:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
@@ -145,6 +151,8 @@ export const createNewTrack = async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/Track"
+ *       400:
+ *         description: Validation failed
  *       401:
  *         description: User is not authorized or token is missing
  *       403:
@@ -170,6 +178,9 @@ export const updateExistingTrack = async (req, res) => {
         );
         return res.status(200).json(updatedTrack);
     } catch (error) {
+        if (error instanceof mongoose.Error.ValidationError) {
+            return res.status(400).json({ message: Object.values(error.errors)[0].message });
+        }
         console.error("Error updating track:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
