@@ -197,11 +197,15 @@ describe("Users Controller", () => {
     it("should return 400 if birthDate is in the future", async () => {
       jest.spyOn(console, "error").mockImplementation(() => { });
 
+      const futureDate = new Date();
+      futureDate.setFullYear(futureDate.getFullYear() + 1);
+      const birthDate = futureDate.toISOString().split("T")[0];
+
       const userData = {
         username: "testuser",
         email: "test@example.com",
         password: "ValidPassword123!",
-        birthDate: "2026-01-01",
+        birthDate,
       };
 
       const response = await request(app)
