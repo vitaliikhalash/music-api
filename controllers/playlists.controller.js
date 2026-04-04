@@ -20,6 +20,10 @@ import Playlist from "../models/playlist.model.js";
  *           type: string
  *         description:
  *           type: string
+ *         tags:
+ *           type: array
+ *           items:
+ *             type: string
  *         trackIds:
  *           type: array
  *           items:
@@ -39,6 +43,34 @@ import Playlist from "../models/playlist.model.js";
  *       - playlist
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: Filter by title
+ *       - in: query
+ *         name: description
+ *         schema:
+ *           type: string
+ *         description: Filter by description
+ *       - in: query
+ *         name: tags
+ *         schema:
+ *           type: string
+ *         description: Filter by tags
+ *       - in: query
+ *         name: createdAt
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter by date of creation
+ *       - in: query
+ *         name: updatedAt
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter by date of update
  *     responses:
  *       200:
  *         description: Authenticated user's playlists
@@ -55,7 +87,28 @@ import Playlist from "../models/playlist.model.js";
  */
 export const fetchExistingPlaylists = async (req, res) => {
     try {
-        const playlists = await Playlist.find({ userId: req.user.id });
+        const { title, description, tags, createdAt, updatedAt } = req.query;
+        const filter = { userId: req.user.id };
+        if (title) {
+            filter.title = { $regex: title, $options: "i" };
+        }
+        if (description) {
+            filter.description = { $regex: description, $options: "i" };
+        }
+        if (tags) {
+            let tagsArray = Array.isArray(tags) ? tags : tags.split(",");
+            tagsArray = tagsArray.map(tag => tag.trim()).filter(Boolean);
+            if (tagsArray.length > 0) {
+                filter.tags = { $all: tagsArray };
+            }
+        }
+        if (createdAt) {
+            filter.createdAt = { $gte: new Date(createdAt) };
+        }
+        if (updatedAt) {
+            filter.updatedAt = { $gte: new Date(updatedAt) };
+        }
+        const playlists = await Playlist.find(filter);
         if (playlists.length === 0) {
             return res.status(404).json({ message: "No playlists found" });
         }
@@ -86,6 +139,10 @@ export const fetchExistingPlaylists = async (req, res) => {
  *                 type: string
  *               description:
  *                 type: string
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
  *               trackIds:
  *                 type: array
  *                 items:
@@ -104,11 +161,12 @@ export const fetchExistingPlaylists = async (req, res) => {
  *         description: User is not authorized or token is missing
  */
 export const createNewPlaylist = async (req, res) => {
-    const { title, description, trackIds } = req.body;
+    const { title, description, tags, trackIds } = req.body;
     try {
         const playlist = await Playlist.create({
             title,
             description,
+            tags,
             trackIds,
             userId: req.user.id,
         });
@@ -149,6 +207,10 @@ export const createNewPlaylist = async (req, res) => {
  *                 type: string
  *               description:
  *                 type: string
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
  *               trackIds:
  *                 type: array
  *                 items:
