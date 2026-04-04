@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: music-api
+  labels:
+    app: music-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: music-api
+  template:
+    metadata:
+      labels:
+        app: music-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: music-api
+          image: music-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          env:
+            - name: ATLAS_URI
+              valueFrom:
+                secretKeyRef:
+                  name: music-api-secrets
+                  key: ATLAS_URI
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"

@@ -1,0 +1,13 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: music-api-monitor
+  labels:
+    release: prometheus-stack 
+spec:
+  selector:
+    matchLabels:
+      app: music-api
+  endpoints:
+    - port: http-metrics
+      path: /metrics
