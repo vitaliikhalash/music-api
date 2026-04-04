@@ -1,0 +1,10 @@
+services:
+  music-api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: music-api
+    ports:
+      - "3000:3000"
+    env_file:
+      - config.env
