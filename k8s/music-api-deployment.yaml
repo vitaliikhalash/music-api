@@ -20,6 +20,7 @@ spec:
       containers:
         - name: music-api
           image: music-api:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           env:
